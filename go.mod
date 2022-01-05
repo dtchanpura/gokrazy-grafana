@@ -1,3 +1,3 @@
-module git.dcpri.me/gokrazy-apps/grafana
+module git.dcpri.me/gokrazy/grafana
 
 go 1.17
