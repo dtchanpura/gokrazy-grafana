@@ -16,13 +16,14 @@ func TestExtract(t *testing.T) {
 	err := extractFile(
 		"tmp",
 		fmt.Sprintf(downloadURL, *flagDownloadVersion),
-		fmt.Sprintf("grafana-%s", *flagDownloadVersion),
+		fmt.Sprintf("grafana-%s/", *flagDownloadVersion),
 		lastModifiedTime,
 	)
 	if err != nil && err.Error() != "no change" {
 		t.Fatalf("error extracting file: %v", err)
 	}
 	if err == nil {
+		lastModifiedTimeStatic = time.Time{}
 		err = addTimestampFile(filepath.Join("tmp", ".timestamp.upstream"), newTime)
 		if err != nil {
 			t.Logf("error adding timestamp file %v", err) // non fatal error

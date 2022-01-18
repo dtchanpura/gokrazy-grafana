@@ -39,11 +39,14 @@ func main() {
 		}
 		return
 	}
-
+	err := os.MkdirAll(*flagBaseDir, 0755)
+	if err != nil {
+		log.Fatal(err)
+	}
 	lastModifiedTime := getLastModifiedTime(*flagTimestampFile + ".upstream")
 	lastModifiedTimeStatic := getLastModifiedTime(*flagTimestampFile + ".static")
 	newTime := time.Now()
-	err := extractFile(
+	err = extractFile(
 		*flagBaseDir,
 		fmt.Sprintf(downloadURL, *flagDownloadVersion),
 		fmt.Sprintf("grafana-%s/", *flagDownloadVersion),
@@ -54,6 +57,8 @@ func main() {
 		log.Fatal(err)
 	}
 	if err == nil {
+		// forcefully update static file as there is a change in upstream
+		lastModifiedTimeStatic = time.Time{}
 		err = addTimestampFile(*flagTimestampFile+".upstream", newTime)
 		if err != nil {
 			log.Println(err) // non fatal error
@@ -63,7 +68,7 @@ func main() {
 	err = extractFile(
 		*flagBaseDir,
 		fmt.Sprintf(staticBinaryURL, *flagDownloadVersion),
-		fmt.Sprintf("grafana-%s/", *flagDownloadVersion),
+		"",
 		lastModifiedTimeStatic,
 	)
 
