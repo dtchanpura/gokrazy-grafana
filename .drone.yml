@@ -32,7 +32,7 @@ steps:
   - name: build
     image: golang:1.17-alpine
     commands:
-      - apk add --no-cache make git gcc
+      - apk add --no-cache make git gcc libc-dev
       - make -C external/grafana build-go
     when:
       event:
