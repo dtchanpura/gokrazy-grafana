@@ -1,0 +1,4 @@
+[submodule "external/grafana"]
+	path = external/grafana
+	url = https://github.com/grafana/grafana.git
+	branch = tags/v8.3.4
