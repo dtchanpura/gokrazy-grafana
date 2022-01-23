@@ -11,50 +11,57 @@ workspace:
   path: /drone/src
 
 steps:
-- name: test
-  image: golang:1.17-alpine
-  commands:
-    - CGO_ENABLED=0 go test ./...
+  - name: test
+    image: golang:1.17-alpine
+    commands:
+      - CGO_ENABLED=0 go test ./...
 
-- name: submodules
-  image: alpine/git
-  commands:
-  - git submodule update --init
-  when:
-    event:
-    - tag
+  - name: submodules
+    image: alpine/git
+    commands:
+      - git submodule update --init
+    when:
+      event:
+        - tag
+        - promote
 
-- name: build
-  image: golang:1.17-alpine
-  commands:
-    - apk add --no-cache make git
-    - make -C external/grafana build-go
-  when:
-    event:
-    - tag
+  - name: build
+    image: golang:1.17-alpine
+    commands:
+      - apk add --no-cache make git
+      - make -C external/grafana build-go
+    when:
+      event:
+        - tag
+        - promote
 
-- name: archive
-  image: alpine
-  commands:
-    - mkdir bin/
-    - mv external/grafana/bin/linux-arm64/grafana-* bin/
-    - tar -czvf grafana-${DRONE_TAG/v/}.tar.gz bin/
-  when:
-    event:
-    - tag
+  - name: archive
+    image: alpine
+    commands:
+      - mkdir bin/
+      - mv external/grafana/bin/linux-arm64/grafana-* bin/
+      - tar -czvf grafana-${DRONE_TAG/v/}.tar.gz bin/
+    when:
+      event:
+        - tag
+        - promote
 
-- name: upload
-  image: alpine
-  environment:
-    AWS_SECRET_ACCESS_KEY:
-      from_secret: secret_key
-    AWS_ACCESS_KEY_ID:
-      from_secret: access_key
-  commands:
-    - wget https://dist-thatwebsite-xyz.s3.eu-central-003.backblazeb2.com/some-fancy-tools/b2-uploader/latest/b2-uploader-linux-arm64.tar.gz
-    - tar -xvf b2-uploader-linux-arm64.tar.gz
-    - ./b2-uploader --input-file grafana-${DRONE_TAG/v/}.tar.gz --region eu-central-003 --bucket dist-thatwebsite-xyz --key gokrazy/grafana/${DRONE_TAG/v/}/grafana-${DRONE_TAG/v/}-linux-arm64.tar.gz
-    - ./b2-uploader --input-file grafana-${DRONE_TAG/v/}.tar.gz --region eu-central-003 --bucket dist-thatwebsite-xyz --key gokrazy/grafana/latest/grafana-latest-linux-arm64.tar.gz
-  when:
-    event:
-    - tag
+
+  - name: upload
+    image: alpine
+    environment:
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: secret_key
+      AWS_ACCESS_KEY_ID:
+        from_secret: access_key
+    commands:
+      - wget https://dist-thatwebsite-xyz.s3.eu-central-003.backblazeb2.com/some-fancy-tools/b2-uploader/latest/b2-uploader-linux-arm64.tar.gz
+      - tar -xvf b2-uploader-linux-arm64.tar.gz
+      - ./b2-uploader --input-file grafana-${DRONE_TAG/v/}.tar.gz --region eu-central-003 --bucket dist-thatwebsite-xyz --key gokrazy/grafana/${DRONE_TAG/v/}/grafana-${DRONE_TAG/v/}-linux-arm64.tar.gz
+      - ./b2-uploader --input-file grafana-${DRONE_TAG/v/}.tar.gz --region eu-central-003 --bucket dist-thatwebsite-xyz --key gokrazy/grafana/latest/grafana-latest-linux-arm64.tar.gz
+    when:
+      event:
+        - tag
+        - promote
+      target:
+        - production
