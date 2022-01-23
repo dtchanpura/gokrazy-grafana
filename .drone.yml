@@ -15,7 +15,11 @@ steps:
     image: golang:1.17-alpine
     commands:
       - CGO_ENABLED=0 go test ./...
-
+    when:
+      exclude:
+        event:
+          - tag
+          - promote
   - name: submodules
     image: alpine/git
     commands:
@@ -28,7 +32,7 @@ steps:
   - name: build
     image: golang:1.17-alpine
     commands:
-      - apk add --no-cache make git
+      - apk add --no-cache make git gcc
       - make -C external/grafana build-go
     when:
       event:
