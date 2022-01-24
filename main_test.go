@@ -32,7 +32,7 @@ func TestExtract(t *testing.T) {
 	// extract static binaries
 	err = extractFile(
 		"tmp",
-		fmt.Sprintf(staticBinaryURL, *flagDownloadVersion),
+		fmt.Sprintf(staticBinaryURL, *flagDownloadVersion, *flagDownloadVersion),
 		fmt.Sprintf("grafana-%s/", *flagDownloadVersion),
 		lastModifiedTimeStatic,
 	)
