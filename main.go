@@ -20,8 +20,6 @@ import (
 const (
 	downloadURL     = "https://dl.grafana.com/oss/release/grafana-%s.linux-arm64.tar.gz"
         staticBinaryURL = "https://dist-thatwebsite-xyz.s3.eu-central-003.backblazeb2.com/gokrazy/grafana/%s/grafana-%s-linux-arm64.tar.gz"
-	// staticBinaryURL = "https://dist-thatwebsite-xyz.s3.eu-central-003.backblazeb2.com/grafana-%s-static-gokrazy.tar.gz"
-	// staticBinaryURL = "http://localhost:8000/grafana-%s-static-gokrazy.tar.gz"
 )
 
 var (
