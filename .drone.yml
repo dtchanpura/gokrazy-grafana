@@ -67,5 +67,3 @@ steps:
       event:
         - tag
         - promote
-      target:
-        - production
