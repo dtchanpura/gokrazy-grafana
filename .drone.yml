@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: default
+name: arm64
 
 platform:
   os: linux
@@ -12,7 +12,7 @@ workspace:
 
 steps:
   - name: test
-    image: golang:1.17-alpine
+    image: golang:1.18-alpine
     commands:
       - CGO_ENABLED=0 go test ./...
     when:
@@ -20,6 +20,7 @@ steps:
         event:
           - tag
           - promote
+
   - name: submodules
     image: alpine/git
     commands:
@@ -30,7 +31,7 @@ steps:
         - promote
 
   - name: build
-    image: golang:1.17-alpine
+    image: golang:1.18-alpine
     commands:
       - apk add --no-cache make git gcc libc-dev
       - LDFLAGS="-static" make -C external/grafana build-go
@@ -42,27 +43,116 @@ steps:
   - name: archive
     image: alpine
     commands:
-      - mkdir bin/
-      - mv external/grafana/bin/linux-arm64/grafana-* bin/
-      - tar -czvf grafana-${DRONE_TAG/v/}.tar.gz bin/
+      - apk add --no-cache make
+      - rm -f _gokrazy/extrafiles_arm64.tar
+      - make _gokrazy/extrafiles_arm64.tar
     when:
       event:
         - tag
         - promote
 
-
-  - name: upload
-    image: alpine
+  - name: push
     environment:
-      AWS_SECRET_ACCESS_KEY:
-        from_secret: secret_key
-      AWS_ACCESS_KEY_ID:
-        from_secret: access_key
+      GIT_SSH_COMMAND:
+        from_secret: ssh_command
+      SSH_KEY:
+        from_secret: ssh_key
+      SSH_HOSTKEY:
+        from_secret: ssh_hostkey
+    image: alpine/git
     commands:
-      - wget https://dist-thatwebsite-xyz.s3.eu-central-003.backblazeb2.com/some-fancy-tools/b2-uploader/latest/b2-uploader-linux-arm64.tar.gz
-      - tar -xvf b2-uploader-linux-arm64.tar.gz
-      - ./b2-uploader --input-file grafana-${DRONE_TAG/v/}.tar.gz --region eu-central-003 --bucket dist-thatwebsite-xyz --key gokrazy/grafana/${DRONE_TAG/v/}/grafana-${DRONE_TAG/v/}-linux-arm64.tar.gz
-      - ./b2-uploader --input-file grafana-${DRONE_TAG/v/}.tar.gz --region eu-central-003 --bucket dist-thatwebsite-xyz --key gokrazy/grafana/latest/grafana-latest-linux-arm64.tar.gz
+      - mkdir ~/.ssh
+      - echo $${SSH_KEY} | base64 -d > ~/.ssh/id_ed25519
+      - chmod 400 ~/.ssh/id_ed25519
+      - echo $${SSH_HOSTKEY} >> ~/.ssh/known_hosts
+      - chmod 600 ~/.ssh/known_hosts
+      - git remote add ssh-origin $(echo ${DRONE_REMOTE_URL} | sed "s#https://#ssh://git@#")
+      - git config user.email release@thatwebsite.xyz
+      - git config user.name "Drone CI"
+      - git add _gokrazy
+      - git commit -m "[skip ci] extrafiles updated"
+      - git pull --rebase --verbose ssh-origin ${DRONE_BRANCH}
+      - git push --verbose ssh-origin ${DRONE_BRANCH}
+    when:
+      event:
+        - tag
+        - promote
+
+---
+kind: pipeline
+type: docker
+name: amd64
+
+platform:
+  os: linux
+  arch: amd64
+
+workspace:
+  path: /drone/src
+
+steps:
+  - name: test
+    image: golang:1.18-alpine
+    commands:
+      - CGO_ENABLED=0 go test ./...
+    when:
+      exclude:
+        event:
+          - tag
+          - promote
+
+  - name: submodules
+    image: alpine/git
+    commands:
+      - git submodule update --init
+    when:
+      event:
+        - tag
+        - promote
+
+  - name: build
+    image: golang:1.18-alpine
+    commands:
+      - apk add --no-cache make git gcc libc-dev
+      - LDFLAGS="-static" make -C external/grafana build-go
+    when:
+      event:
+        - tag
+        - promote
+
+  - name: archive
+    image: alpine
+    commands:
+      - apk add --no-cache make
+      - rm -f _gokrazy/extrafiles_amd64.tar
+      - make _gokrazy/extrafiles_amd64.tar
+    when:
+      event:
+        - tag
+        - promote
+
+  - name: push
+    environment:
+      GIT_SSH_COMMAND:
+        from_secret: ssh_command
+      SSH_KEY:
+        from_secret: ssh_key
+      SSH_HOSTKEY:
+        from_secret: ssh_hostkey
+    image: alpine/git
+    commands:
+      - mkdir ~/.ssh
+      - echo $${SSH_KEY} | base64 -d > ~/.ssh/id_ed25519
+      - chmod 400 ~/.ssh/id_ed25519
+      - echo $${SSH_HOSTKEY} >> ~/.ssh/known_hosts
+      - chmod 600 ~/.ssh/known_hosts
+      - git remote add ssh-origin $(echo ${DRONE_REMOTE_URL} | sed "s#https://#ssh://git@#")
+      - git config user.email release@thatwebsite.xyz
+      - git config user.name "Drone CI"
+      - git add _gokrazy
+      - git commit -m "[skip ci] extrafiles updated"
+      - git pull --rebase --verbose ssh-origin ${DRONE_BRANCH}
+      - git push --verbose ssh-origin ${DRONE_BRANCH}
     when:
       event:
         - tag
