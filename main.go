@@ -18,13 +18,12 @@ import (
 )
 
 const (
-	downloadURL     = "https://dl.grafana.com/oss/release/grafana-%s.linux-arm64.tar.gz"
-        staticBinaryURL = "https://dist-thatwebsite-xyz.s3.eu-central-003.backblazeb2.com/gokrazy/grafana/%s/grafana-%s-linux-arm64.tar.gz"
+	downloadURL = "https://dl.grafana.com/oss/release/grafana-%s.linux-arm64.tar.gz"
 )
 
 var (
 	flagDownloadFiles   = flag.Bool("download-files", false, "Download files before starting")
-	flagDownloadVersion = flag.String("download-version", "8.3.4", "Version to download")
+	flagDownloadVersion = flag.String("download-version", "8.5.2", "Version to download")
 	flagBaseDir         = flag.String("base-dir", os.Getenv("HOME"), "Base Directory to use")
 	flagTimestampFile   = flag.String("timestamp-file", filepath.Join(os.Getenv("HOME"), ".timestamp"), "Last updated timestamp file")
 )
@@ -33,7 +32,7 @@ func main() {
 	flag.Parse()
 
 	if !*flagDownloadFiles {
-		if err := start(*flagBaseDir); err != nil {
+		if err := start(); err != nil {
 			log.Fatal(err)
 		}
 		return
@@ -43,7 +42,7 @@ func main() {
 		log.Fatal(err)
 	}
 	lastModifiedTime := getLastModifiedTime(*flagTimestampFile + ".upstream")
-	lastModifiedTimeStatic := getLastModifiedTime(*flagTimestampFile + ".static")
+	// lastModifiedTimeStatic := getLastModifiedTime(*flagTimestampFile + ".static")
 	newTime := time.Now()
 	err = extractFile(
 		*flagBaseDir,
@@ -57,34 +56,21 @@ func main() {
 	}
 	if err == nil {
 		// forcefully update static file as there is a change in upstream
-		lastModifiedTimeStatic = time.Time{}
+		// lastModifiedTimeStatic = time.Time{}
 		err = addTimestampFile(*flagTimestampFile+".upstream", newTime)
 		if err != nil {
 			log.Println(err) // non fatal error
 		}
 	}
-	// extract static binaries
-	err = extractFile(
-		*flagBaseDir,
-		fmt.Sprintf(staticBinaryURL, *flagDownloadVersion, *flagDownloadVersion),
-		"",
-		lastModifiedTimeStatic,
-	)
 
-	if err != nil && err.Error() != "no change" {
-		log.Fatal(err)
+	if err := start(); err != nil {
+		log.Println(err)
+		os.Exit(125)
 	}
-	if err == nil {
-		err = addTimestampFile(*flagTimestampFile+".static", newTime)
-		if err != nil {
-			log.Println(err) // non fatal error
-		}
-	}
-	start(*flagBaseDir)
 }
 
-func start(baseDir string) error {
-	var bin = filepath.Join(baseDir, "bin", "grafana-server")
+func start() error {
+	var bin = filepath.Join("/usr", "local", "bin", "grafana-server")
 	if err := syscall.Exec(bin, []string{bin, "-homepath=/perm/grafana"}, nil); err != nil {
 		return err
 	}
