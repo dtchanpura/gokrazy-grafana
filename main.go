@@ -23,7 +23,7 @@ const (
 
 var (
 	flagDownloadFiles   = flag.Bool("download-files", false, "Download files before starting")
-	flagDownloadVersion = flag.String("download-version", "8.5.2", "Version to download")
+	flagDownloadVersion = flag.String("download-version", "8.5.5", "Version to download")
 	flagBaseDir         = flag.String("base-dir", os.Getenv("HOME"), "Base Directory to use")
 	flagTimestampFile   = flag.String("timestamp-file", filepath.Join(os.Getenv("HOME"), ".timestamp"), "Last updated timestamp file")
 )
