@@ -1,4 +1,4 @@
-VERSION := 9.0.1
+VERSION := 9.1.7
 
 all: _gokrazy/extrafiles_arm64.tar _gokrazy/extrafiles_amd64.tar
 
